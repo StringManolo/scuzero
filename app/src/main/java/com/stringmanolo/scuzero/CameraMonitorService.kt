@@ -36,6 +36,7 @@ class CameraMonitorService : Service() {
   private var isMonitoring = false
   private val checkInterval = 1000L
   private val ourPackageName = "com.stringmanolo.scuzero"
+  private val ourPackageName2 = "com.stringmanolo.scuzero.debug"
 
   // Improved duplicate detection
   private data class LogKey(val appName: String, val packageName: String, val eventType: String, val minute: String)
@@ -145,7 +146,7 @@ class CameraMonitorService : Service() {
 
           val foregroundApp = getForegroundApp()
           if (foregroundApp != null && !previousForegroundApps.contains(foregroundApp)) {
-            if (foregroundApp != ourPackageName && isCameraRelatedApp(foregroundApp, knownCameraApps)) {
+            if (foregroundApp != ourPackageName && foregroundApp != ourPackageName2 && isCameraRelatedApp(foregroundApp, knownCameraApps)) {
               val appName = getAppName(foregroundApp)
               val detailedInfo = getAppDetailedInfo(foregroundApp)
               val logEntry = createDetailedLogEntry("FOREGROUND_APP", appName, foregroundApp, detailedInfo)
