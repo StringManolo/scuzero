@@ -5,7 +5,10 @@ import android.os.Bundle
 import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
+
+
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -30,6 +33,9 @@ class MainActivity : AppCompatActivity() {
   }
 }
 
+
+
+
 class CameraManager(private val context: Context) {
   private val devicePolicyManager: DevicePolicyManager =
   context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
@@ -37,52 +43,32 @@ class CameraManager(private val context: Context) {
   ComponentName(context, MyDeviceAdminReceiver::class.java)
 
   fun setCameraEnabled(enabled: Boolean): String {
-    return try {
-      if (!devicePolicyManager.isAdminActive(adminComponentName)) {
-        requestAdminPermissions()
-        return "admin_required"
-      }
-      devicePolicyManager.setCameraDisabled(adminComponentName, !enabled)
-      if (enabled) "camera_enabled" else "camera_disabled"
-    } catch (e: SecurityException) {
-      "Security exception: Check permissions"
-    } catch (e: IllegalStateException) {
-      "Illegal state: Device policy not available"
-    } catch (e: Exception) {
-      "Error: ${e.message}"
+    if (!devicePolicyManager.isAdminActive(adminComponentName)) {
+      requestAdminPermissions()
+      return "admin_required"
     }
+    devicePolicyManager.setCameraDisabled(adminComponentName, !enabled)
+    return if (enabled) "camera_enabled" else "camera_disabled"
   }
 
   fun isCameraEnabled(): Boolean {
-    return try {
-      if (!devicePolicyManager.isAdminActive(adminComponentName)) {
-        true
-      } else {
-        !devicePolicyManager.getCameraDisabled(adminComponentName)
-      }
-    } catch (e: Exception) {
-      true
+    return if (!devicePolicyManager.isAdminActive(adminComponentName)) {
+      true // Por defecto asumimos que está habilitada si no somos admin
+    } else {
+      !devicePolicyManager.getCameraDisabled(adminComponentName)
     }
   }
 
   fun isAdminActive(): Boolean {
-    return try {
-      devicePolicyManager.isAdminActive(adminComponentName)
-    } catch (e: Exception) {
-      false
-    }
+    return devicePolicyManager.isAdminActive(adminComponentName)
   }
 
   private fun requestAdminPermissions() {
-    try {
-      val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
-        putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponentName)
-        putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Permissions needed to control the camera.")
-      }
-      context.startActivity(intent)
-    } catch (e: Exception) {
-      Toast.makeText(context, "Failed to request admin permissions", Toast.LENGTH_LONG).show()
+    val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
+      putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponentName)
+      putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Permissions needed to control the camers.")
     }
+    context.startActivity(intent)
   }
 }
 
@@ -90,12 +76,11 @@ class WebAppInterface(
   private val context: android.content.Context,
   private val cameraManager: CameraManager
 ) {
+
+  /* General Interfaces */
   @JavascriptInterface
   fun showToast(message: String) {
-    try {
-      Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    } catch (e: Exception) {
-    }
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
   }
 
   @JavascriptInterface
@@ -103,53 +88,34 @@ class WebAppInterface(
     return "Android ${android.os.Build.VERSION.RELEASE}"
   }
 
+  
+  /* Camera Interfaces */
   @JavascriptInterface
   fun enableCamera(): String {
-    return try {
-      cameraManager.setCameraEnabled(true)
-    } catch (e: Exception) {
-      "Exception: ${e.message}"
-    }
+    return cameraManager.setCameraEnabled(true)
   }
 
   @JavascriptInterface
   fun disableCamera(): String {
-    return try {
-      cameraManager.setCameraEnabled(false)
-    } catch (e: Exception) {
-      "Exception: ${e.message}"
-    }
+    return cameraManager.setCameraEnabled(false)
   }
 
   @JavascriptInterface
   fun isCameraEnabled(): Boolean {
-    return try {
-      cameraManager.isCameraEnabled()
-    } catch (e: Exception) {
-      true
-    }
+    return cameraManager.isCameraEnabled()
   }
 
   @JavascriptInterface
   fun isAdminActive(): Boolean {
-    return try {
-      cameraManager.isAdminActive()
-    } catch (e: Exception) {
-      false
-    }
+    return cameraManager.isAdminActive()
   }
 
   @JavascriptInterface
   fun getCameraStatus(): String {
-    return try {
-      when {
-        !cameraManager.isAdminActive() -> "admin_required"
-        cameraManager.isCameraEnabled() -> "enabled"
-        else -> "disabled"
-      }
-    } catch (e: Exception) {
-      "error"
+    return when {
+      !cameraManager.isAdminActive() -> "admin_required"
+      cameraManager.isCameraEnabled() -> "enabled"
+      else -> "disabled"
     }
   }
 }
-
