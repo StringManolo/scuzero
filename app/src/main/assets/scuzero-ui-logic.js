@@ -99,9 +99,9 @@ const refreshLogs = () => {
   if (typeof scuzero !== 'undefined' && scuzero.getCameraAccessLogs) {
     const logs = scuzero.getCameraAccessLogs();
     const logArea = document.getElementById('cameraLogs');
-    logArea.value = logs || "No camera access events detected yet...";
+    logArea.value = logs || "No camera access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/camera_logs.txt";
     
-    if (logs && logs.trim() !== "" && logs !== "No camera access events detected yet...") {
+    if (logs && logs.trim() !== "" && logs !== "No camera access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/camera_logs.txt") {
       logArea.scrollTop = logArea.scrollHeight;
     }
   }
@@ -112,6 +112,23 @@ const clearLogs = () => {
     const result = scuzero.clearCameraLogs();
     showNativeToast("Logs: " + result);
     refreshLogs();
+  }
+}
+
+const copyLogs = () => {
+  const logArea = document.getElementById('cameraLogs');
+  const logs = logArea.value;
+  
+  if (logs && logs.trim() !== "" && logs !== "No camera access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/camera_logs.txt") {
+    if (typeof scuzero !== 'undefined' && scuzero.copyToClipboard) {
+      scuzero.copyToClipboard(logs);
+    } else {
+      logArea.select();
+      document.execCommand('copy');
+      showNativeToast("Logs copied to clipboard");
+    }
+  } else {
+    showNativeToast("No logs to copy");
   }
 }
 

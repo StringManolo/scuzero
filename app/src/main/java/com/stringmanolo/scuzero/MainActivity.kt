@@ -10,12 +10,15 @@ import android.content.Intent
 import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
   private lateinit var cameraMonitor: CameraMonitorService
   private val CAMERA_PERMISSION_REQUEST_CODE = 100
+  private val STORAGE_PERMISSION_REQUEST_CODE = 101
 
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,16 +34,30 @@ class MainActivity : AppCompatActivity() {
     webView.addJavascriptInterface(WebAppInterface(this, cameraMonitor), "scuzero")
     webView.loadUrl("file:///android_asset/index.html")
 
-    checkCameraPermission()
+    checkPermissions()
   }
 
-  private fun checkCameraPermission() {
+  private fun checkPermissions() {
+    val permissionsToRequest = mutableListOf<String>()
+
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
     != PackageManager.PERMISSION_GRANTED) {
+      permissionsToRequest.add(Manifest.permission.CAMERA)
+    }
+
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) 
+    != PackageManager.PERMISSION_GRANTED) {
+      permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+
+    if (permissionsToRequest.isNotEmpty()) {
       ActivityCompat.requestPermissions(
         this,
-        arrayOf(Manifest.permission.CAMERA),
-        CAMERA_PERMISSION_REQUEST_CODE
+        permissionsToRequest.toTypedArray(),
+        if (permissionsToRequest.contains(Manifest.permission.CAMERA)) 
+        CAMERA_PERMISSION_REQUEST_CODE 
+        else 
+        STORAGE_PERMISSION_REQUEST_CODE
       )
     }
   }
@@ -57,6 +74,13 @@ class MainActivity : AppCompatActivity() {
           Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show()
         } else {
           Toast.makeText(this, "Camera permission denied - some features may not work", Toast.LENGTH_LONG).show()
+        }
+      }
+      STORAGE_PERMISSION_REQUEST_CODE -> {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          Toast.makeText(this, "Storage permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+          Toast.makeText(this, "Storage permission denied - logs won't be saved", Toast.LENGTH_LONG).show()
         }
       }
     }
@@ -165,6 +189,18 @@ class WebAppInterface(
     }
   } catch (e: Exception) {
     "permission_request_failed: ${e.message}"
+  }
+}
+
+@JavascriptInterface
+fun copyToClipboard(text: String) {
+  try {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clip = ClipData.newPlainText("Camera Logs", text)
+    clipboard.setPrimaryClip(clip)
+    Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
+  } catch (e: Exception) {
+    Toast.makeText(context, "Failed to copy logs", Toast.LENGTH_SHORT).show()
   }
 }
 }

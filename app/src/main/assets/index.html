@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scuzero - UI</title>
+  <title>Scuzero - Advanced Camera Monitor</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -76,6 +76,15 @@
       border-radius: 5px;
       margin: 10px 0;
     }
+    .log-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .log-header h2 {
+      margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -100,16 +109,20 @@
       <span id="monitorStatus" class="status inactive">Not Monitoring</span>
       <div class="info-text">
         Advanced monitoring detects camera access, app foreground/background events, and flashlight usage.
-        Shows detailed technical information for advanced users.
+        Shows detailed technical information for advanced users. Logs are automatically saved to ./scuzero_logs/camera_logs.txt
       </div>
     </div>
 
     <div class="section">
-      <h2>📋 Camera Access Logs (Advanced)</h2>
+      <div class="log-header">
+        <h2>📋 Camera Access Logs (Advanced)</h2>
+        <button onclick="copyLogs()">📋 Copy Logs</button>
+      </div>
       <textarea id="cameraLogs" class="log-area" readonly></textarea>
       <div class="info-text">
-        Real-time detailed logs with stack traces, package info, and technical details. 
-        Toasts and notifications will alert you when camera access is detected.
+        Real-time detailed logs with package info and technical details. 
+        Notifications will alert you when camera access is detected, even when app is in background.
+        Duplicate logs within the same minute are filtered automatically.
       </div>
     </div>
 

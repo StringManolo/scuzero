@@ -12,9 +12,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.camera2.CameraManager
 import android.os.Build
-import android.provider.Settings
+import android.os.Environment
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import java.io.File
+import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -32,7 +34,10 @@ class CameraMonitorService : Service() {
 
   private val cameraAccessLogs = ConcurrentLinkedQueue<String>()
   private var isMonitoring = false
-  private val checkInterval = 1000L // 1 second for more responsive detection
+  private val checkInterval = 1000L
+  private val ourPackageName = "com.stringmanolo.scuzero"
+  private var lastLogContent: String? = null
+  private var lastLogMinute: String? = null
 
   companion object {
     const val NOTIFICATION_ID = 12346
@@ -90,14 +95,15 @@ class CameraMonitorService : Service() {
   }
 
   private fun createAlertNotification(appName: String, packageName: String): Notification {
+    val timestamp = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
     return NotificationCompat.Builder(this, ALERT_CHANNEL_ID)
-    .setContentTitle("🚨 Camera Access Detected")
+    .setContentTitle("📸 Camera Access Detected")
     .setContentText("$appName is using the camera")
     .setSmallIcon(android.R.drawable.ic_dialog_alert)
     .setPriority(NotificationCompat.PRIORITY_HIGH)
     .setAutoCancel(true)
     .setStyle(NotificationCompat.BigTextStyle()
-    .bigText("Application: $appName\nPackage: $packageName\nTime: ${getCurrentTime()}\n\nCamera privacy may be compromised."))
+    .bigText("Application: $appName\nPackage: $packageName\nTime: $timestamp\n\nOpen Scuzero to view detailed logs."))
     .build()
   }
 
@@ -120,7 +126,6 @@ class CameraMonitorService : Service() {
       )
 
       val previousForegroundApps = mutableSetOf<String>()
-      var cameraStateChangeCount = 0
       var lastCameraStateCheck = System.currentTimeMillis()
 
       while (isMonitoring) {
@@ -134,13 +139,15 @@ class CameraMonitorService : Service() {
 
           val foregroundApp = getForegroundApp()
           if (foregroundApp != null && !previousForegroundApps.contains(foregroundApp)) {
-            if (isCameraRelatedApp(foregroundApp, knownCameraApps)) {
+            if (foregroundApp != ourPackageName && isCameraRelatedApp(foregroundApp, knownCameraApps)) {
               val appName = getAppName(foregroundApp)
               val detailedInfo = getAppDetailedInfo(foregroundApp)
               val logEntry = createDetailedLogEntry("FOREGROUND_APP", appName, foregroundApp, detailedInfo)
 
-              addLogEntry(logEntry)
-              showCameraAlert(appName, foregroundApp, "App brought to foreground")
+              if (shouldAddLog(logEntry)) {
+                addLogEntry(logEntry)
+                showCameraAlert(appName, foregroundApp)
+              }
             }
           }
 
@@ -165,9 +172,14 @@ class CameraMonitorService : Service() {
     try {
       cameraManager.registerTorchCallback(object : CameraManager.TorchCallback() {
         override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
+          if (shouldIgnoreOurApp()) return
+
           val logEntry = createDetailedLogEntry("TORCH_EVENT", "System", cameraId, "Torch ${if (enabled) "enabled" else "disabled"}")
-          addLogEntry(logEntry)
-          showCameraAlert("System", cameraId, "Flashlight toggled")
+
+          if (shouldAddLog(logEntry)) {
+            addLogEntry(logEntry)
+            showCameraAlert("System", cameraId)
+          }
         }
       }, null)
     } catch (e: SecurityException) {
@@ -186,6 +198,8 @@ class CameraMonitorService : Service() {
       while (events.hasNextEvent()) {
         events.getNextEvent(event)
 
+        if (event.packageName == ourPackageName) continue
+
         when (event.eventType) {
           UsageEvents.Event.ACTIVITY_RESUMED -> {
             if (isCameraRelatedApp(event.packageName, emptySet())) {
@@ -193,15 +207,20 @@ class CameraMonitorService : Service() {
               val detailedInfo = getAppDetailedInfo(event.packageName)
               val logEntry = createDetailedLogEntry("ACTIVITY_RESUMED", appName, event.packageName, detailedInfo)
 
-              addLogEntry(logEntry)
-              showCameraAlert(appName, event.packageName, "Activity resumed")
+              if (shouldAddLog(logEntry)) {
+                addLogEntry(logEntry)
+                showCameraAlert(appName, event.packageName)
+              }
             }
           }
           UsageEvents.Event.ACTIVITY_PAUSED -> {
             if (isCameraRelatedApp(event.packageName, emptySet())) {
               val appName = getAppName(event.packageName)
               val logEntry = createDetailedLogEntry("ACTIVITY_PAUSED", appName, event.packageName, "App backgrounded")
-              addLogEntry(logEntry)
+
+              if (shouldAddLog(logEntry)) {
+                addLogEntry(logEntry)
+              }
             }
           }
         }
@@ -209,6 +228,10 @@ class CameraMonitorService : Service() {
     } catch (e: SecurityException) {
     } catch (e: Exception) {
     }
+  }
+
+  private fun shouldIgnoreOurApp(): Boolean {
+    return getForegroundApp() == ourPackageName
   }
 
   private fun getForegroundApp(): String? {
@@ -230,6 +253,8 @@ class CameraMonitorService : Service() {
   }
 
   private fun isCameraRelatedApp(packageName: String, knownCameraApps: Set<String>): Boolean {
+    if (packageName == ourPackageName) return false
+
     return knownCameraApps.any { packageName.contains(it, ignoreCase = true) } ||
     packageName.contains("camera", ignoreCase = true) ||
     hasCameraPermission(packageName)
@@ -291,12 +316,20 @@ class CameraMonitorService : Service() {
 
     Detailed Information:
     $details
-
-    Stack Trace Context:
-    ${Thread.currentThread().stackTrace.take(10).joinToString("\n") { 
-      "  at ${it.className}.${it.methodName} (${it.fileName}:${it.lineNumber})" 
-    }}
     """.trimIndent()
+  }
+
+  private fun shouldAddLog(newLog: String): Boolean {
+    val currentMinute = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
+    val logContent = newLog.replace(Regex("\\d{2}:\\d{2}:\\d{2}\\.\\d{3}"), "TIMESTAMP")
+
+    return if (logContent == lastLogContent && currentMinute == lastLogMinute) {
+      false
+    } else {
+      lastLogContent = logContent
+      lastLogMinute = currentMinute
+      true
+    }
   }
 
   private fun addLogEntry(logEntry: String) {
@@ -309,21 +342,45 @@ class CameraMonitorService : Service() {
     if (latestLogs.size > 20) {
       latestLogs.poll()
     }
+
+    saveLogToFile(logEntry)
   }
 
-  private fun showCameraAlert(appName: String, packageName: String, reason: String) {
-    showToast("📸 Camera accessed by: $appName")
-    showAlertNotification(appName, packageName, reason)
+  private fun saveLogToFile(logEntry: String) {
+    try {
+      val directory = File(Environment.getExternalStorageDirectory(), "scuzero_logs")
+      if (!directory.exists()) {
+        directory.mkdirs()
+      }
+      val logFile = File(directory, "camera_logs.txt")
+      val writer = FileWriter(logFile, true)
+      writer.write("$logEntry\n\n")
+      writer.write("=".repeat(50))
+      writer.write("\n\n")
+      writer.close()
+    } catch (e: Exception) {
+    }
   }
 
-  private fun showToast(message: String) {
-    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+  private fun showCameraAlert(appName: String, packageName: String) {
+    showBackgroundToast(appName)
+    showAlertNotification(appName, packageName)
   }
 
-  private fun showAlertNotification(appName: String, packageName: String, reason: String) {
-    val alertId = System.currentTimeMillis().toInt()
-    val notification = createAlertNotification(appName, packageName)
-    notificationManager.notify(alertId, notification)
+  private fun showBackgroundToast(appName: String) {
+    try {
+      Toast.makeText(this, "📸 Camera accessed by: $appName", Toast.LENGTH_LONG).show()
+    } catch (e: Exception) {
+    }
+  }
+
+  private fun showAlertNotification(appName: String, packageName: String) {
+    try {
+      val alertId = System.currentTimeMillis().toInt()
+      val notification = createAlertNotification(appName, packageName)
+      notificationManager.notify(alertId, notification)
+    } catch (e: Exception) {
+    }
   }
 
   private fun getCurrentTime(): String {
