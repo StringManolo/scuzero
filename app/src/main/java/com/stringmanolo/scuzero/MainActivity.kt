@@ -6,10 +6,12 @@ import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.widget.Toast
+import android.content.Intent
+import android.content.Context
 
 class MainActivity : AppCompatActivity() {
-  private lateinit var cameraBlocker: AdvancedCameraBlocker
-  
+  private lateinit var cameraMonitor: CameraMonitorService
+
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -17,18 +19,18 @@ class MainActivity : AppCompatActivity() {
     val webView = WebView(this)
     setContentView(webView)
 
-    cameraBlocker = AdvancedCameraBlocker(this)
+    cameraMonitor = CameraMonitorService()
 
     webView.settings.javaScriptEnabled = true
     webView.settings.domStorageEnabled = true
-    webView.addJavascriptInterface(WebAppInterface(this, cameraBlocker), "scuzero")
+    webView.addJavascriptInterface(WebAppInterface(this, cameraMonitor), "scuzero")
     webView.loadUrl("file:///android_asset/index.html")
   }
 }
 
 class WebAppInterface(
   private val context: android.content.Context,
-  private val cameraBlocker: AdvancedCameraBlocker
+  private val cameraMonitor: CameraMonitorService
 ) {
   @JavascriptInterface
   fun showToast(message: String) {
@@ -41,19 +43,54 @@ class WebAppInterface(
   }
 
   @JavascriptInterface
-  fun enableAdvancedCameraBlock(): String {
-    return cameraBlocker.enableCompleteCameraBlock()
+  fun startCameraMonitoring(): String {
+    return try {
+      val intent = Intent(context, CameraMonitorService::class.java)
+      context.startService(intent)
+      "monitoring_started"
+    } catch (e: Exception) {
+      "monitoring_failed: ${e.message}"
+    }
   }
 
   @JavascriptInterface
-  fun disableAdvancedCameraBlock(): String {
-    return cameraBlocker.disableCameraBlock()
+  fun stopCameraMonitoring(): String {
+    return try {
+      val intent = Intent(context, CameraMonitorService::class.java)
+      context.stopService(intent)
+      "monitoring_stopped"
+    } catch (e: Exception) {
+      "stop_failed: ${e.message}"
+    }
   }
 
   @JavascriptInterface
-  fun getCameraBlockStatus(): String {
-    return "advanced_protection_available"
+  fun getCameraAccessLogs(): String {
+    return try {
+      CameraMonitorService.latestLogs.joinToString("\n")
+    } catch (e: Exception) {
+      "Error retrieving logs"
+    }
+  }
+
+  @JavascriptInterface
+  fun clearCameraLogs(): String {
+    return try {
+      CameraMonitorService.latestLogs.clear()
+      "logs_cleared"
+    } catch (e: Exception) {
+      "clear_failed: ${e.message}"
+    }
+  }
+
+  @JavascriptInterface
+  fun openUsageAccessSettings(): String {
+    return try {
+      val intent = Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+      context.startActivity(intent)
+      "opened_usage_settings"
+    } catch (e: Exception) {
+      "failed_to_open_settings"
+    }
   }
 }
-
-class MyDeviceAdminReceiver : android.app.admin.DeviceAdminReceiver()

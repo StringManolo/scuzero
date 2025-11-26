@@ -4,6 +4,7 @@
   <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
 
   <application
     android:allowBackup="true"
@@ -36,7 +37,7 @@
       </intent-filter>
     </receiver>
 
-    <service android:name=".CameraLockService" />
+    <service android:name=".CameraMonitorService" />
 
   </application>
 

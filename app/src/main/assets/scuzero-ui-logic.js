@@ -1,3 +1,5 @@
+let refreshInterval = null;
+
 const showNativeToast = (msg) => {
   if (typeof scuzero !== 'undefined' && scuzero.showToast) {
     scuzero.showToast("scuzero: " + msg);
@@ -6,96 +8,101 @@ const showNativeToast = (msg) => {
   }
 }
 
-const getDeviceInfo = () => {
-  if (typeof scuzero !== 'undefined' && scuzero.getDeviceInfo) {
-    showNativeToast(scuzero.getDeviceInfo());
-  }
-}
-
-const toggleCameraProtection = () => {
-  const checkbox = document.getElementById('cameraToggle');
-  const statusElement = document.getElementById('cameraStatus');
-  
+const startMonitoring = () => {
   if (typeof scuzero === 'undefined') {
     showNativeToast("System interface not available");
-    checkbox.checked = false;
     return;
   }
 
-  if (checkbox.checked) {
-    enableCameraProtection();
+  try {
+    const result = scuzero.startCameraMonitoring();
+    showNativeToast("Monitoring: " + result);
+    
+    if (result === "monitoring_started") {
+      updateMonitorStatus(true);
+      startLogRefresh();
+    }
+  } catch (error) {
+    showNativeToast("Error starting monitor: " + error);
+  }
+}
+
+const stopMonitoring = () => {
+  if (typeof scuzero === 'undefined') {
+    showNativeToast("System interface not available");
+    return;
+  }
+
+  try {
+    const result = scuzero.stopCameraMonitoring();
+    showNativeToast("Monitoring: " + result);
+    
+    if (result === "monitoring_stopped") {
+      updateMonitorStatus(false);
+      stopLogRefresh();
+    }
+  } catch (error) {
+    showNativeToast("Error stopping monitor: " + error);
+  }
+}
+
+const updateMonitorStatus = (isActive) => {
+  const statusElement = document.getElementById('monitorStatus');
+  if (isActive) {
+    statusElement.textContent = "Active";
+    statusElement.className = "status active";
   } else {
-    disableCameraProtection();
+    statusElement.textContent = "Inactive";
+    statusElement.className = "status inactive";
   }
 }
 
-const enableCameraProtection = () => {
-  const statusElement = document.getElementById('cameraStatus');
-  
-  try {
-    statusElement.textContent = "Activating...";
-    statusElement.className = "status";
+const refreshLogs = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.getCameraAccessLogs) {
+    const logs = scuzero.getCameraAccessLogs();
+    const logArea = document.getElementById('cameraLogs');
+    logArea.value = logs;
     
-    const result = scuzero.enableAdvancedCameraBlock();
-    showNativeToast("Protection: " + result);
-    
-    if (result.includes("block_status")) {
-      statusElement.textContent = "Active";
-      statusElement.className = "status disabled";
-    } else if (result.includes("failed")) {
-      statusElement.textContent = "Failed";
-      statusElement.className = "status error";
-      document.getElementById('cameraToggle').checked = false;
-    } else {
-      statusElement.textContent = "Unknown";
-      statusElement.className = "status error";
+    if (logs.trim() !== "") {
+      logArea.scrollTop = logArea.scrollHeight;
     }
-  } catch (error) {
-    showNativeToast("Error enabling protection");
-    statusElement.textContent = "Error";
-    statusElement.className = "status error";
-    document.getElementById('cameraToggle').checked = false;
   }
 }
 
-const disableCameraProtection = () => {
-  const statusElement = document.getElementById('cameraStatus');
-  
-  try {
-    statusElement.textContent = "Deactivating...";
-    statusElement.className = "status";
-    
-    const result = scuzero.disableAdvancedCameraBlock();
-    showNativeToast("Protection: " + result);
-    
-    if (result.includes("disabled")) {
-      statusElement.textContent = "Inactive";
-      statusElement.className = "status enabled";
-    } else if (result.includes("failed")) {
-      statusElement.textContent = "Error";
-      statusElement.className = "status error";
-      document.getElementById('cameraToggle').checked = true;
-    } else {
-      statusElement.textContent = "Unknown";
-      statusElement.className = "status error";
-    }
-  } catch (error) {
-    showNativeToast("Error disabling protection");
-    statusElement.textContent = "Error";
-    statusElement.className = "status error";
-    document.getElementById('cameraToggle').checked = true;
+const clearLogs = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.clearCameraLogs) {
+    const result = scuzero.clearCameraLogs();
+    showNativeToast("Logs: " + result);
+    refreshLogs();
   }
 }
 
-const checkProtectionStatus = () => {
-  if (typeof scuzero !== 'undefined' && scuzero.getCameraBlockStatus) {
-    const status = scuzero.getCameraBlockStatus();
-    console.log("Camera protection status:", status);
+const startLogRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+  refreshInterval = setInterval(refreshLogs, 1000);
+}
+
+const stopLogRefresh = () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+}
+
+const openUsageSettings = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.openUsageAccessSettings) {
+    scuzero.openUsageAccessSettings();
+  } else {
+    showNativeToast("Function not available");
   }
 }
 
 window.addEventListener('load', function() {
-  setTimeout(() => {
-    checkProtectionStatus();
-  }, 1000);
+  refreshLogs();
+});
+
+window.addEventListener('beforeunload', function() {
+  stopLogRefresh();
 });
