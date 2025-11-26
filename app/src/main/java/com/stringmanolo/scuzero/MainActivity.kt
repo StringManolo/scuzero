@@ -8,9 +8,14 @@ import android.webkit.WebView
 import android.widget.Toast
 import android.content.Intent
 import android.content.Context
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
   private lateinit var cameraMonitor: CameraMonitorService
+  private val CAMERA_PERMISSION_REQUEST_CODE = 100
 
   @SuppressLint("SetJavaScriptEnabled")
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,6 +30,36 @@ class MainActivity : AppCompatActivity() {
     webView.settings.domStorageEnabled = true
     webView.addJavascriptInterface(WebAppInterface(this, cameraMonitor), "scuzero")
     webView.loadUrl("file:///android_asset/index.html")
+
+    checkCameraPermission()
+  }
+
+  private fun checkCameraPermission() {
+    if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
+    != PackageManager.PERMISSION_GRANTED) {
+      ActivityCompat.requestPermissions(
+        this,
+        arrayOf(Manifest.permission.CAMERA),
+        CAMERA_PERMISSION_REQUEST_CODE
+      )
+    }
+  }
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    when (requestCode) {
+      CAMERA_PERMISSION_REQUEST_CODE -> {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          Toast.makeText(this, "Camera permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+          Toast.makeText(this, "Camera permission denied - some features may not work", Toast.LENGTH_LONG).show()
+        }
+      }
+    }
   }
 }
 
@@ -39,15 +74,19 @@ class WebAppInterface(
 
   @JavascriptInterface
   fun getDeviceInfo(): String {
-    return "Android ${android.os.Build.VERSION.RELEASE}"
+    return "Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})"
   }
 
   @JavascriptInterface
   fun startCameraMonitoring(): String {
     return try {
-      val intent = Intent(context, CameraMonitorService::class.java)
-      context.startService(intent)
-      "monitoring_started"
+      if (hasUsageStatsPermission()) {
+        val intent = Intent(context, CameraMonitorService::class.java)
+        context.startService(intent)
+        "monitoring_started"
+      } else {
+        "usage_permission_required"
+      }
     } catch (e: Exception) {
       "monitoring_failed: ${e.message}"
     }
@@ -67,9 +106,9 @@ class WebAppInterface(
   @JavascriptInterface
   fun getCameraAccessLogs(): String {
     return try {
-      CameraMonitorService.latestLogs.joinToString("\n")
+      CameraMonitorService.latestLogs.joinToString("\n\n" + "=".repeat(50) + "\n\n")
     } catch (e: Exception) {
-      "Error retrieving logs"
+      "Error retrieving logs: ${e.message}"
     }
   }
 
@@ -93,4 +132,39 @@ class WebAppInterface(
       "failed_to_open_settings"
     }
   }
+
+  @JavascriptInterface
+  fun hasUsageStatsPermission(): Boolean {
+    return try {
+      val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+      val mode = appOps.checkOpNoThrow(
+        android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+        android.os.Process.myUid(),
+        context.packageName
+      )
+      mode == android.app.AppOpsManager.MODE_ALLOWED
+    } catch (e: Exception) {
+      false
+    }
+  }
+
+  @JavascriptInterface
+  fun requestCameraPermission(): String {
+    return try {
+      if (androidx.core.content.ContextCompat.checkSelfPermission(
+        context, 
+        Manifest.permission.CAMERA
+      ) != PackageManager.PERMISSION_GRANTED
+    ) {
+      val intent = Intent(context, MainActivity::class.java)
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      context.startActivity(intent)
+      "camera_permission_requested"
+    } else {
+      "camera_permission_already_granted"
+    }
+  } catch (e: Exception) {
+    "permission_request_failed: ${e.message}"
+  }
+}
 }
