@@ -153,4 +153,3 @@ class WebAppInterface(
   }
 }
 
-class MyDeviceAdminReceiver : android.app.admin.DeviceAdminReceiver()
