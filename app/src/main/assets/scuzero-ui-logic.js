@@ -12,105 +12,84 @@ const getDeviceInfo = () => {
   }
 }
 
-const toggleCamera = async () => {
-  const checkbox = document.getElementById('cameraToggle');
-  const statusElement = document.getElementById('cameraStatus');
-  
+const enableCameraBlock = () => {
   if (typeof scuzero === 'undefined') {
     showNativeToast("Interface not available");
     return;
   }
 
   try {
-    const isEnabled = checkbox.checked;
+    const result = scuzero.enableAdvancedCameraBlock();
+    showNativeToast("Block result: " + result);
     
-    if (isEnabled) {
-      // Enable camera
-      const result = scuzero.enableCamera();
-      if (result === "camera_enabled") {
-        statusElement.textContent = "Enabled";
-        statusElement.className = "status enabled";
-        showNativeToast("Camera enabled");
-      } else {
-        checkbox.checked = false;
-        statusElement.textContent = "Error";
-        statusElement.className = "status admin-required";
-      }
-    } else {
-      const result = scuzero.disableCamera();
-      if (result === "camera_disabled") {
-        statusElement.textContent = "Disabled";
-        statusElement.className = "status disabled";
-        showNativeToast("Camera disabled");
-      } else if (result === "admin_required") {
-        statusElement.textContent = "Permissions required";
-        statusElement.className = "status admin-required";
-        showNativeToast("Activate administrator permissions");
-      } else {
-        checkbox.checked = true;
-        statusElement.textContent = "Error";
-        statusElement.className = "status admin-required";
-      }
+    if (result.includes("block_status")) {
+      updateUI("blocked");
+    } else if (result.includes("failed")) {
+      updateUI("error");
     }
   } catch (error) {
     showNativeToast("Error: " + error);
-    checkbox.checked = !checkbox.checked;
   }
 }
 
-const checkCameraStatus = () => {
+const disableCameraBlock = () => {
   if (typeof scuzero === 'undefined') {
     showNativeToast("Interface not available");
     return;
   }
 
-  const status = scuzero.getCameraStatus();
-  const checkbox = document.getElementById('cameraToggle');
+  try {
+    const result = scuzero.disableAdvancedCameraBlock();
+    showNativeToast("Unblock result: " + result);
+    
+    if (result.includes("disabled")) {
+      updateUI("unblocked");
+    } else if (result.includes("failed")) {
+      updateUI("error");
+    }
+  } catch (error) {
+    showNativeToast("Error: " + error);
+  }
+}
+
+const updateUI = (status) => {
   const statusElement = document.getElementById('cameraStatus');
-
+  const toggleButton = document.getElementById('cameraToggle');
+  
+  if (!statusElement || !toggleButton) return;
+  
   switch (status) {
-    case "admin_required":
-      statusElement.textContent = "Permissions required";
-      statusElement.className = "status admin-required";
-      checkbox.checked = true;
-      checkbox.disabled = false;
-      showNativeToast("Administrator permissions required");
-      break;
-    case "enabled":
-      statusElement.textContent = "Enabled";
-      statusElement.className = "status enabled";
-      checkbox.checked = true;
-      checkbox.disabled = false;
-      showNativeToast("Camera enabled");
-      break;
-    case "disabled":
-      statusElement.textContent = "Disabled";
+    case "blocked":
+      statusElement.textContent = "Camera Blocked";
       statusElement.className = "status disabled";
-      checkbox.checked = false;
-      checkbox.disabled = false;
-      showNativeToast("Camera disabled");
+      toggleButton.checked = false;
       break;
-    default:
-      statusElement.textContent = "Unknown status";
+    case "unblocked":
+      statusElement.textContent = "Camera Unblocked";
+      statusElement.className = "status enabled";
+      toggleButton.checked = true;
+      break;
+    case "error":
+      statusElement.textContent = "Error Occurred";
       statusElement.className = "status admin-required";
-      checkbox.disabled = true;
+      break;
   }
 }
 
-const checkAdminStatus = () => {
-  if (typeof scuzero === 'undefined') {
-    showNativeToast("Interface not available");
-    return;
-  }
-
-  const isAdmin = scuzero.isAdminActive();
-  if (isAdmin) {
-    showNativeToast("✓ Administrator permissions active");
+const toggleCamera = () => {
+  const checkbox = document.getElementById('cameraToggle');
+  if (checkbox.checked) {
+    disableCameraBlock();
   } else {
-    showNativeToast("✗ Administrator permissions required");
+    enableCameraBlock();
   }
 }
 
 window.addEventListener('load', function() {
-  setTimeout(checkCameraStatus, 1000);
+  setTimeout(() => {
+    if (typeof scuzero !== 'undefined' && scuzero.getCameraBlockStatus) {
+      const status = scuzero.getCameraBlockStatus();
+        showNativeToast(`Camera block status: ${status}`);
+    }
+  }, 1000);
 });
