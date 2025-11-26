@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scuzero - Advanced Camera Monitor</title>
+  <title>Scuzero - Privacy Hardening</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -78,18 +78,43 @@
     }
     .log-header {
       display: flex;
-      justify-content: between;
+      justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
     }
     .log-header h2 {
       margin: 0;
     }
+    .tab-container {
+      margin: 20px 0;
+    }
+    .tab-buttons {
+      display: flex;
+      border-bottom: 1px solid #ccc;
+    }
+    .tab-button {
+      padding: 10px 20px;
+      background: #f0f0f0;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+    }
+    .tab-button.active {
+      background: white;
+      border-bottom: 2px solid #007bff;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px 0;
+    }
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🔒 Scuzero Advanced Camera Monitor</h1>
+    <h1>🔒 Scuzero Privacy Hardening</h1>
 
     <div id="permissionWarning" class="permission-warning" style="display: none;">
       <strong>⚠ Permissions Required:</strong> 
@@ -97,32 +122,124 @@
       <button onclick="fixPermissions()">Fix Permissions</button>
     </div>
 
-    <div class="section">
-      <h2>📹 Camera Access Monitor</h2>
-      <div class="controls">
-        <button onclick="startMonitoring()">🚀 Start Advanced Monitoring</button>
-        <button onclick="stopMonitoring()">🛑 Stop Monitoring</button>
-        <button onclick="clearLogs()">🗑️ Clear Logs</button>
-        <button onclick="refreshLogs()">🔄 Refresh Logs</button>
-        <button onclick="checkPermissions()">🔐 Check Permissions</button>
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="tab-button active" onclick="openTab('camera')">📷 Camera</button>
+        <button class="tab-button" onclick="openTab('microphone')">🎤 Microphone</button>
+        <button class="tab-button" onclick="openTab('gps')">📍 GPS</button>
+        <button class="tab-button" onclick="openTab('internet')">🌐 Internet</button>
       </div>
-      <span id="monitorStatus" class="status inactive">Not Monitoring</span>
-      <div class="info-text">
-        Advanced monitoring detects camera access, app foreground/background events, and flashlight usage.
-        Shows detailed technical information for advanced users. Logs are automatically saved to ./scuzero_logs/camera_logs.txt
-      </div>
-    </div>
 
-    <div class="section">
-      <div class="log-header">
-        <h2>📋 Camera Access Logs (Advanced)</h2>
-        <button onclick="copyLogs()">📋 Copy Logs</button>
+      <!-- Camera Tab -->
+      <div id="camera" class="tab-content active">
+        <div class="section">
+          <h2>📷 Camera Access Monitor</h2>
+          <div class="controls">
+            <button onclick="startCameraMonitoring()">🚀 Start Monitoring</button>
+            <button onclick="stopCameraMonitoring()">🛑 Stop Monitoring</button>
+            <button onclick="clearCameraLogs()">🗑️ Clear Logs</button>
+            <button onclick="refreshCameraLogs()">🔄 Refresh Logs</button>
+          </div>
+          <span id="cameraMonitorStatus" class="status inactive">Not Monitoring</span>
+          <div class="info-text">
+            Monitors camera access and shows real-time alerts. Requires Usage Access permission.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="log-header">
+            <h2>📋 Camera Access Logs</h2>
+            <button onclick="copyCameraLogs()">📋 Copy Logs</button>
+          </div>
+          <textarea id="cameraLogs" class="log-area" readonly></textarea>
+          <div class="info-text">
+            Real-time detailed logs. Notifications will alert you when camera access is detected.
+          </div>
+        </div>
       </div>
-      <textarea id="cameraLogs" class="log-area" readonly></textarea>
-      <div class="info-text">
-        Real-time detailed logs with package info and technical details. 
-        Notifications will alert you when camera access is detected, even when app is in background.
-        Duplicate logs within the same minute are filtered automatically.
+
+      <!-- Microphone Tab -->
+      <div id="microphone" class="tab-content">
+        <div class="section">
+          <h2>🎤 Microphone Access Monitor</h2>
+          <div class="controls">
+            <button onclick="startMicrophoneMonitoring()">🚀 Start Monitoring</button>
+            <button onclick="stopMicrophoneMonitoring()">🛑 Stop Monitoring</button>
+            <button onclick="clearMicrophoneLogs()">🗑️ Clear Logs</button>
+            <button onclick="refreshMicrophoneLogs()">🔄 Refresh Logs</button>
+          </div>
+          <span id="microphoneMonitorStatus" class="status inactive">Not Monitoring</span>
+          <div class="info-text">
+            Monitors microphone access and shows real-time alerts. Requires Usage Access permission.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="log-header">
+            <h2>📋 Microphone Access Logs</h2>
+            <button onclick="copyMicrophoneLogs()">📋 Copy Logs</button>
+          </div>
+          <textarea id="microphoneLogs" class="log-area" readonly></textarea>
+          <div class="info-text">
+            Real-time detailed logs. Notifications will alert you when microphone access is detected.
+          </div>
+        </div>
+      </div>
+
+      <!-- GPS Tab -->
+      <div id="gps" class="tab-content">
+        <div class="section">
+          <h2>📍 GPS Access Monitor</h2>
+          <div class="controls">
+            <button onclick="startGpsMonitoring()">🚀 Start Monitoring</button>
+            <button onclick="stopGpsMonitoring()">🛑 Stop Monitoring</button>
+            <button onclick="clearGpsLogs()">🗑️ Clear Logs</button>
+            <button onclick="refreshGpsLogs()">🔄 Refresh Logs</button>
+          </div>
+          <span id="gpsMonitorStatus" class="status inactive">Not Monitoring</span>
+          <div class="info-text">
+            Monitors GPS access and shows real-time alerts. Requires Usage Access permission.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="log-header">
+            <h2>📋 GPS Access Logs</h2>
+            <button onclick="copyGpsLogs()">📋 Copy Logs</button>
+          </div>
+          <textarea id="gpsLogs" class="log-area" readonly></textarea>
+          <div class="info-text">
+            Real-time detailed logs. Notifications will alert you when GPS access is detected.
+          </div>
+        </div>
+      </div>
+
+      <!-- Internet Tab -->
+      <div id="internet" class="tab-content">
+        <div class="section">
+          <h2>🌐 Internet Access Monitor</h2>
+          <div class="controls">
+            <button onclick="startInternetMonitoring()">🚀 Start Monitoring</button>
+            <button onclick="stopInternetMonitoring()">🛑 Stop Monitoring</button>
+            <button onclick="clearInternetLogs()">🗑️ Clear Logs</button>
+            <button onclick="refreshInternetLogs()">🔄 Refresh Logs</button>
+          </div>
+          <span id="internetMonitorStatus" class="status inactive">Not Monitoring</span>
+          <div class="info-text">
+            Monitors internet access and shows real-time alerts. Requires Usage Access permission.
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="log-header">
+            <h2>📋 Internet Access Logs</h2>
+            <button onclick="copyInternetLogs()">📋 Copy Logs</button>
+          </div>
+          <textarea id="internetLogs" class="log-area" readonly></textarea>
+          <div class="info-text">
+            Real-time detailed logs. Notifications will alert you when internet access is detected.
+          </div>
+        </div>
       </div>
     </div>
 

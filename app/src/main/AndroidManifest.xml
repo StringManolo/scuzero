@@ -3,6 +3,11 @@
 
   <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
   <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
   <uses-permission android:name="android.permission.FLASHLIGHT" />
@@ -40,6 +45,9 @@
     </receiver>
 
     <service android:name=".CameraMonitorService" />
+    <service android:name=".MicrophoneMonitorService" />
+    <service android:name=".GpsMonitorService" />
+    <service android:name=".InternetMonitorService" />
 
   </application>
 
