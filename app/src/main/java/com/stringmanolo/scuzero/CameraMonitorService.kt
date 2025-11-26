@@ -36,7 +36,7 @@ class CameraMonitorService : Service() {
   private var isMonitoring = false
   private val checkInterval = 1000L
   private val ourPackageName = "com.stringmanolo.scuzero"
-  private val ourPackageName2 = "com.stringmanolo.scuzero.debug"
+  private val ourPackageName2 ="com.stringmanolo.scuzero.debug"
 
   // Improved duplicate detection
   private data class LogKey(val appName: String, val packageName: String, val eventType: String, val minute: String)
@@ -215,7 +215,8 @@ class CameraMonitorService : Service() {
       while (events.hasNextEvent()) {
         events.getNextEvent(event)
 
-        if (event.packageName == ourPackageName) continue
+        if (event.packageName == ourPackageName ) continue
+        if (event.packageName == ourPackageName2 ) continue
 
         when (event.eventType) {
           UsageEvents.Event.ACTIVITY_RESUMED -> {
@@ -261,8 +262,12 @@ class CameraMonitorService : Service() {
     }
   }
 
-  private fun shouldIgnoreOurApp(): Boolean {
-    return getForegroundApp() == ourPackageName
+  private fun shouldIgnoreOurApp(packageName: String): Boolean {
+    val appsToIgnore = setOf(
+      ourPackageName,
+      ourPackageName2
+    )
+    return appsToIgnore.contains(packageName)
   }
 
   private fun getForegroundApp(): String? {
@@ -285,6 +290,7 @@ class CameraMonitorService : Service() {
 
   private fun isCameraRelatedApp(packageName: String, knownCameraApps: Set<String>): Boolean {
     if (packageName == ourPackageName) return false
+    if (packageName == ourPackageName2) return false
 
     return knownCameraApps.any { packageName.contains(it, ignoreCase = true) } ||
     packageName.contains("camera", ignoreCase = true) ||
