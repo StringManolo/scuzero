@@ -1,1 +1,1 @@
-HelloWorld: Example APP Showcase Kotlin APK Template 
+Schuzero: Hardening app for Android

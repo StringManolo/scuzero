@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-  namespace 'com.example.helloworld'
+  namespace 'com.stringmanolo.scuzero'
   compileSdk 34
 
   defaultConfig {
-    applicationId "com.example.helloworld"
+    applicationId "com.stringmanolo.scuzero"
     minSdk 24
     targetSdk 34
     versionCode 1

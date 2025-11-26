@@ -1,4 +1,4 @@
-package com.example.helloworld
+package com.stringmanolo.scuzero
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
