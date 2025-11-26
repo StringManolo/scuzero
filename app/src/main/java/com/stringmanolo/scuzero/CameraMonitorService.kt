@@ -262,7 +262,7 @@ class CameraMonitorService : Service() {
     }
   }
 
-  private fun shouldIgnoreOurApp(packageName: String): Boolean {
+  private fun shouldIgnoreOurApp(): Boolean {
     val appsToIgnore = setOf(
       ourPackageName,
       ourPackageName2
