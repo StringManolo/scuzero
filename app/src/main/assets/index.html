@@ -1,91 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scuzero UI</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f0f0f0;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        input {
-            padding: 10px;
-            margin: 5px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            width: 200px;
-        }
-        .camera-control {
-            margin: 15px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #f9f9f9;
-        }
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin: 10px 0;
-        }
-        .checkbox-container input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-        }
-        .status {
-            margin-left: 10px;
-            font-weight: bold;
-        }
-        .status.enabled {
-            color: green;
-        }
-        .status.disabled {
-            color: red;
-        }
-        .status.admin-required {
-            color: orange;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scuzero UI</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f0f0f0;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .camera-control {
+      margin: 15px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .checkbox-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+    }
+    .status {
+      margin-left: 10px;
+      font-weight: bold;
+    }
+    .status.enabled {
+      color: green;
+    }
+    .status.disabled {
+      color: red;
+    }
+    .status.error {
+      color: orange;
+    }
+    .info-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Scuzero UI</h1>
+  <div class="container">
+    <h1>Scuzero UI</h1>
 
-        <button onclick="showNativeToast('Hello from JS!')">Toast Test</button>
-        <button onclick="getDeviceInfo()">Native info test</button>
+    <button onclick="showNativeToast('Hello from JS!')">Toast Test</button>
+    <button onclick="getDeviceInfo()">Device Info</button>
 
-        <br><br>
+    <br><br>
 
-        <!-- Camera Control -->
-        <div class="camera-control">
-            <h2>Camera Control</h2>
-            <div class="checkbox-container">
-                <input type="checkbox" id="cameraToggle" onchange="toggleCamera()">
-                <label for="cameraToggle">Enable Camera</label>
-                <span id="cameraStatus" class="status">Loading...</span>
-            </div>
-            <button onclick="checkCameraStatus()">Check Status</button>
-            <button onclick="checkAdminStatus()">Check Admin Permissions</button>
-        </div>
+    <div class="camera-control">
+      <h2>Advanced Camera Protection</h2>
+      <div class="checkbox-container">
+        <input type="checkbox" id="cameraToggle" onchange="toggleCameraProtection()">
+        <label for="cameraToggle">Enable Camera Protection</label>
+        <span id="cameraStatus" class="status">Ready</span>
+      </div>
+      <div class="info-text">
+        This feature uses advanced camera hijacking to prevent unauthorized access.
+        A notification will appear while protection is active.
+      </div>
     </div>
+  </div>
 
-    <script src="scuzero-ui-logic.js"></script>
+  <script src="scuzero-ui-logic.js"></script>
 </body>
 </html>

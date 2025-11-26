@@ -1,8 +1,8 @@
 const showNativeToast = (msg) => {
   if (typeof scuzero !== 'undefined' && scuzero.showToast) {
-    scuzero.showToast("scuzero: " + msg || "No messages to show");
+    scuzero.showToast("scuzero: " + msg);
   } else {
-    alert("Update your SystemWebview");
+    alert("System interface not available");
   }
 }
 
@@ -12,84 +12,90 @@ const getDeviceInfo = () => {
   }
 }
 
-const enableCameraBlock = () => {
+const toggleCameraProtection = () => {
+  const checkbox = document.getElementById('cameraToggle');
+  const statusElement = document.getElementById('cameraStatus');
+  
   if (typeof scuzero === 'undefined') {
-    showNativeToast("Interface not available");
+    showNativeToast("System interface not available");
+    checkbox.checked = false;
     return;
   }
 
+  if (checkbox.checked) {
+    enableCameraProtection();
+  } else {
+    disableCameraProtection();
+  }
+}
+
+const enableCameraProtection = () => {
+  const statusElement = document.getElementById('cameraStatus');
+  
   try {
+    statusElement.textContent = "Activating...";
+    statusElement.className = "status";
+    
     const result = scuzero.enableAdvancedCameraBlock();
-    showNativeToast("Block result: " + result);
+    showNativeToast("Protection: " + result);
     
     if (result.includes("block_status")) {
-      updateUI("blocked");
+      statusElement.textContent = "Active";
+      statusElement.className = "status disabled";
     } else if (result.includes("failed")) {
-      updateUI("error");
+      statusElement.textContent = "Failed";
+      statusElement.className = "status error";
+      document.getElementById('cameraToggle').checked = false;
+    } else {
+      statusElement.textContent = "Unknown";
+      statusElement.className = "status error";
     }
   } catch (error) {
-    showNativeToast("Error: " + error);
+    showNativeToast("Error enabling protection");
+    statusElement.textContent = "Error";
+    statusElement.className = "status error";
+    document.getElementById('cameraToggle').checked = false;
   }
 }
 
-const disableCameraBlock = () => {
-  if (typeof scuzero === 'undefined') {
-    showNativeToast("Interface not available");
-    return;
-  }
-
+const disableCameraProtection = () => {
+  const statusElement = document.getElementById('cameraStatus');
+  
   try {
+    statusElement.textContent = "Deactivating...";
+    statusElement.className = "status";
+    
     const result = scuzero.disableAdvancedCameraBlock();
-    showNativeToast("Unblock result: " + result);
+    showNativeToast("Protection: " + result);
     
     if (result.includes("disabled")) {
-      updateUI("unblocked");
+      statusElement.textContent = "Inactive";
+      statusElement.className = "status enabled";
     } else if (result.includes("failed")) {
-      updateUI("error");
+      statusElement.textContent = "Error";
+      statusElement.className = "status error";
+      document.getElementById('cameraToggle').checked = true;
+    } else {
+      statusElement.textContent = "Unknown";
+      statusElement.className = "status error";
     }
   } catch (error) {
-    showNativeToast("Error: " + error);
+    showNativeToast("Error disabling protection");
+    statusElement.textContent = "Error";
+    statusElement.className = "status error";
+    document.getElementById('cameraToggle').checked = true;
   }
 }
 
-const updateUI = (status) => {
-  const statusElement = document.getElementById('cameraStatus');
-  const toggleButton = document.getElementById('cameraToggle');
-  
-  if (!statusElement || !toggleButton) return;
-  
-  switch (status) {
-    case "blocked":
-      statusElement.textContent = "Camera Blocked";
-      statusElement.className = "status disabled";
-      toggleButton.checked = false;
-      break;
-    case "unblocked":
-      statusElement.textContent = "Camera Unblocked";
-      statusElement.className = "status enabled";
-      toggleButton.checked = true;
-      break;
-    case "error":
-      statusElement.textContent = "Error Occurred";
-      statusElement.className = "status admin-required";
-      break;
-  }
-}
-
-const toggleCamera = () => {
-  const checkbox = document.getElementById('cameraToggle');
-  if (checkbox.checked) {
-    disableCameraBlock();
-  } else {
-    enableCameraBlock();
+const checkProtectionStatus = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.getCameraBlockStatus) {
+    const status = scuzero.getCameraBlockStatus();
+    console.log("Camera protection status:", status);
   }
 }
 
 window.addEventListener('load', function() {
   setTimeout(() => {
-    if (typeof scuzero !== 'undefined' && scuzero.getCameraBlockStatus) {
-      const status = scuzero.getCameraBlockStatus();
-        showNativeToast(`Camera block status: ${status}`);
-    }
+    checkProtectionStatus();
   }, 1000);
 });

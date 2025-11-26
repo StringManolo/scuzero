@@ -75,11 +75,11 @@ class Camera2Hijacker(private val context: Context) {
                       hijackedCount++
                     }
                     override fun onConfigureFailed(session: CameraCaptureSession) {
-                      camera.close()
+                      hijackedCount++
                     }
                   }, null)
                 } catch (e: CameraAccessException) {
-                  camera.close()
+                  hijackedCount++
                 }
               }
               override fun onDisconnected(camera: CameraDevice) {
