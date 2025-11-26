@@ -14,6 +14,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 
+/* debug */
+import android.os.Handler
+import android.os.Looper
+
 class MainActivity : AppCompatActivity() {
   private lateinit var cameraManager: CameraManager
 
@@ -97,7 +101,22 @@ class WebAppInterface(
 
   @JavascriptInterface
   fun disableCamera(): String {
-    return cameraManager.setCameraEnabled(false)
+    Toast.makeText(context, "Disabling camera called ...", Toast.LENGTH_SHORT).show()
+
+    Handler(Looper.getMainLooper()).postDelayed({
+      Toast.makeText(context, "2s delay after disable camera called", Toast.LENGTH_LONG).show()
+    }, 2000)
+
+    try {
+      cameraManager.setCameraEnabled(false)
+      Toast.makeText(context, "Disabled", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+      Toast.makeText(context, "Error: ${e.toString()}", Toast.LENGTH_LONG).show()
+    }
+
+
+    // return cameraManager.setCameraEnabled(false)
+    return "Done."
   }
 
   @JavascriptInterface
