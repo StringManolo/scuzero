@@ -1,256 +1,753 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scuzero - Privacy Hardening</title>
   <style>
+    :root {
+      --primary-color: #2563eb;
+      --primary-dark: #1d4ed8;
+      --background: #ffffff;
+      --surface: #f8fafc;
+      --surface-dark: #f1f5f9;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --text-tertiary: #94a3b8;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --transition: all 0.2s ease-in-out;
+    }
+
+    [data-theme="dark"] {
+      --primary-color: #3b82f6;
+      --primary-dark: #2563eb;
+      --background: #0f172a;
+      --surface: #1e293b;
+      --surface-dark: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-tertiary: #94a3b8;
+      --border: #334155;
+      --border-dark: #475569;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f0f0f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+    .app-container {
+      max-width: 800px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--background);
     }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 5px;
-      cursor: pointer;
+
+    /* Header */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .section {
-      margin: 15px 0;
-      padding: 15px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      background: #f9f9f9;
-    }
-    .status {
-      margin-left: 10px;
-      font-weight: bold;
-    }
-    .status.active {
-      color: green;
-    }
-    .status.inactive {
-      color: red;
-    }
-    .status.warning {
-      color: orange;
-    }
-    .info-text {
-      font-size: 12px;
-      color: #666;
-      margin-top: 10px;
-    }
-    .log-area {
-      width: 100%;
-      height: 300px;
-      margin-top: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      background: #1e1e1e;
-      color: #00ff00;
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      resize: vertical;
-      white-space: pre-wrap;
-      overflow-y: scroll;
-    }
-    .controls {
-      margin: 10px 0;
-    }
-    .permission-warning {
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      color: #856404;
-      padding: 10px;
-      border-radius: 5px;
-      margin: 10px 0;
-    }
-    .log-header {
+
+    .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
     }
-    .log-header h2 {
-      margin: 0;
-    }
-    .tab-container {
-      margin: 20px 0;
-    }
-    .tab-buttons {
+
+    .app-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
       display: flex;
-      border-bottom: 1px solid #ccc;
+      align-items: center;
+      gap: 8px;
     }
-    .tab-button {
-      padding: 10px 20px;
-      background: #f0f0f0;
+
+    .app-title::before {
+      content: "🛡️";
+      font-size: 24px;
+    }
+
+    .theme-toggle {
+      background: none;
       border: none;
-      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      padding: 8px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
+      transition: var(--transition);
     }
-    .tab-button.active {
-      background: white;
-      border-bottom: 2px solid #007bff;
+
+    .theme-toggle:hover {
+      background: var(--surface-dark);
+      color: var(--text-primary);
     }
-    .tab-content {
+
+    /* Main Content */
+    .app-main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    /* Permission Warning */
+    .permission-warning {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 1px solid #f59e0b;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 20px;
       display: none;
-      padding: 20px 0;
     }
-    .tab-content.active {
+
+    .permission-warning.dark {
+      background: linear-gradient(135deg, #78350f, #92400e);
+      border-color: #d97706;
+    }
+
+    .warning-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .warning-text {
+      flex: 1;
+    }
+
+    .warning-text strong {
+      color: #92400e;
       display: block;
+      margin-bottom: 4px;
+    }
+
+    .dark .warning-text strong {
+      color: #fbbf24;
+    }
+
+    /* Tab Navigation */
+    .tab-navigation {
+      display: flex;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .tab-button.active {
+      background: var(--primary-color);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-button:not(.active):hover {
+      background: var(--surface-dark);
+      color: var(--text-primary);
+    }
+
+    /* Monitor Cards */
+    .monitor-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .monitor-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .monitor-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .monitor-description {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .monitor-controls {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .control-button {
+      background: var(--surface-dark);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 14px;
+    }
+
+    .control-button.primary {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .control-button.primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .control-button:not(.primary):hover {
+      background: var(--border);
+      transform: translateY(-1px);
+    }
+
+    .control-button:active {
+      transform: translateY(0);
+    }
+
+    .monitor-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+      background: var(--surface-dark);
+      border-top: 1px solid var(--border);
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .status-indicator.active {
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Logs Section */
+    .logs-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .logs-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logs-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logs-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-button {
+      background: var(--surface-dark);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+    }
+
+    .action-button:hover {
+      background: var(--border);
+      color: var(--text-primary);
+    }
+
+    .log-area {
+      width: 100%;
+      height: 300px;
+      padding: 16px;
+      background: #1a1a1a;
+      color: #00ff00;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      border: none;
+      resize: vertical;
+      white-space: pre-wrap;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #404040 #1a1a1a;
+    }
+
+    .log-area::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .log-area::-webkit-scrollbar-track {
+      background: #1a1a1a;
+    }
+
+    .log-area::-webkit-scrollbar-thumb {
+      background: #404040;
+      border-radius: 3px;
+    }
+
+    .log-area::-webkit-scrollbar-thumb:hover {
+      background: #505050;
+    }
+
+    .logs-info {
+      padding: 12px 20px;
+      background: var(--surface-dark);
+      border-top: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    /* Settings Section */
+    .settings-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .settings-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .app-main {
+        padding: 16px;
+      }
+
+      .monitor-controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .tab-button {
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+
+      .tab-button span {
+        display: none;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .monitor-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .theme-toggle {
+        align-self: flex-end;
+        margin-top: -40px;
+      }
+    }
+
+    /* Animation for new logs */
+    @keyframes highlight {
+      0% { background-color: rgba(34, 197, 94, 0.2); }
+      100% { background-color: transparent; }
+    }
+
+    .log-highlight {
+      animation: highlight 2s ease-in-out;
+    }
+
+    /* Loading states */
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .loading::after {
+      content: "";
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🔒 Scuzero Privacy Hardening</h1>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">Scuzero Privacy</h1>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </div>
+    </header>
 
-    <div id="permissionWarning" class="permission-warning" style="display: none;">
-      <strong>⚠ Permissions Required:</strong> 
-      <span id="permissionText"></span>
-      <button onclick="fixPermissions()">Fix Permissions</button>
-    </div>
-
-    <div class="tab-container">
-      <div class="tab-buttons">
-        <button class="tab-button active" onclick="openTab('camera')">📷 Camera</button>
-        <button class="tab-button" onclick="openTab('microphone')">🎤 Microphone</button>
-        <button class="tab-button" onclick="openTab('gps')">📍 GPS</button>
-        <button class="tab-button" onclick="openTab('internet')">🌐 Internet</button>
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Permission Warning -->
+      <div class="permission-warning" id="permissionWarning">
+        <div class="warning-content">
+          <div class="warning-text">
+            <strong>⚠ Permissions Required</strong>
+            <span id="permissionText">Missing permissions for full functionality</span>
+          </div>
+          <button class="control-button primary" onclick="fixPermissions()">
+            <span>Fix</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Camera Tab -->
-      <div id="camera" class="tab-content active">
-        <div class="section">
-          <h2>📷 Camera Access Monitor</h2>
-          <div class="controls">
-            <button onclick="startCameraMonitoring()">🚀 Start Monitoring</button>
-            <button onclick="stopCameraMonitoring()">🛑 Stop Monitoring</button>
-            <button onclick="clearCameraLogs()">🗑️ Clear Logs</button>
-            <button onclick="refreshCameraLogs()">🔄 Refresh Logs</button>
-          </div>
-          <span id="cameraMonitorStatus" class="status inactive">Not Monitoring</span>
-          <div class="info-text">
-            Monitors camera access and shows real-time alerts. Requires Usage Access permission.
-          </div>
-        </div>
+      <!-- Tab Navigation -->
+      <nav class="tab-navigation">
+        <button class="tab-button active" onclick="openTab('camera')">
+          <span>📷</span>
+          <span>Camera</span>
+        </button>
+        <button class="tab-button" onclick="openTab('microphone')">
+          <span>🎤</span>
+          <span>Mic</span>
+        </button>
+        <button class="tab-button" onclick="openTab('gps')">
+          <span>📍</span>
+          <span>GPS</span>
+        </button>
+        <button class="tab-button" onclick="openTab('internet')">
+          <span>🌐</span>
+          <span>Internet</span>
+        </button>
+      </nav>
 
-        <div class="section">
-          <div class="log-header">
-            <h2>📋 Camera Access Logs</h2>
-            <button onclick="copyCameraLogs()">📋 Copy Logs</button>
+      <!-- Camera Tab -->
+      <div id="camera" class="tab-content">
+        <!-- Camera Monitor -->
+        <section class="monitor-section">
+          <div class="monitor-header">
+            <h2 class="monitor-title">Camera Access Monitor</h2>
+            <p class="monitor-description">Monitor and detect when apps access your camera</p>
           </div>
-          <textarea id="cameraLogs" class="log-area" readonly></textarea>
-          <div class="info-text">
-            Real-time detailed logs. Notifications will alert you when camera access is detected.
+          <div class="monitor-controls">
+            <button class="control-button primary" onclick="startCameraMonitoring()">
+              <span>▶️</span>
+              <span>Start</span>
+            </button>
+            <button class="control-button" onclick="stopCameraMonitoring()">
+              <span>⏹️</span>
+              <span>Stop</span>
+            </button>
+            <button class="control-button" onclick="refreshCameraLogs()">
+              <span>🔄</span>
+              <span>Refresh</span>
+            </button>
+            <button class="control-button" onclick="clearCameraLogs()">
+              <span>🗑️</span>
+              <span>Clear</span>
+            </button>
           </div>
-        </div>
+          <div class="monitor-status">
+            <div class="status-indicator" id="cameraStatusIndicator"></div>
+            <span class="status-text" id="cameraStatusText">Ready to monitor</span>
+          </div>
+        </section>
+
+        <!-- Camera Logs -->
+        <section class="logs-section">
+          <div class="logs-header">
+            <h3 class="logs-title">Access Logs</h3>
+            <div class="logs-actions">
+              <button class="action-button" onclick="copyCameraLogs()">
+                <span>📋</span>
+                <span>Copy</span>
+              </button>
+            </div>
+          </div>
+          <textarea class="log-area" id="cameraLogs" readonly></textarea>
+          <div class="logs-info">
+            Logs are automatically saved to ./scuzero_logs/camera_logs.txt
+          </div>
+        </section>
       </div>
 
       <!-- Microphone Tab -->
-      <div id="microphone" class="tab-content">
-        <div class="section">
-          <h2>🎤 Microphone Access Monitor</h2>
-          <div class="controls">
-            <button onclick="startMicrophoneMonitoring()">🚀 Start Monitoring</button>
-            <button onclick="stopMicrophoneMonitoring()">🛑 Stop Monitoring</button>
-            <button onclick="clearMicrophoneLogs()">🗑️ Clear Logs</button>
-            <button onclick="refreshMicrophoneLogs()">🔄 Refresh Logs</button>
+      <div id="microphone" class="tab-content" style="display: none;">
+        <!-- Microphone Monitor -->
+        <section class="monitor-section">
+          <div class="monitor-header">
+            <h2 class="monitor-title">Microphone Access Monitor</h2>
+            <p class="monitor-description">Monitor and detect when apps access your microphone</p>
           </div>
-          <span id="microphoneMonitorStatus" class="status inactive">Not Monitoring</span>
-          <div class="info-text">
-            Monitors microphone access and shows real-time alerts. Requires Usage Access permission.
+          <div class="monitor-controls">
+            <button class="control-button primary" onclick="startMicrophoneMonitoring()">
+              <span>▶️</span>
+              <span>Start</span>
+            </button>
+            <button class="control-button" onclick="stopMicrophoneMonitoring()">
+              <span>⏹️</span>
+              <span>Stop</span>
+            </button>
+            <button class="control-button" onclick="refreshMicrophoneLogs()">
+              <span>🔄</span>
+              <span>Refresh</span>
+            </button>
+            <button class="control-button" onclick="clearMicrophoneLogs()">
+              <span>🗑️</span>
+              <span>Clear</span>
+            </button>
           </div>
-        </div>
+          <div class="monitor-status">
+            <div class="status-indicator" id="microphoneStatusIndicator"></div>
+            <span class="status-text" id="microphoneStatusText">Ready to monitor</span>
+          </div>
+        </section>
 
-        <div class="section">
-          <div class="log-header">
-            <h2>📋 Microphone Access Logs</h2>
-            <button onclick="copyMicrophoneLogs()">📋 Copy Logs</button>
+        <!-- Microphone Logs -->
+        <section class="logs-section">
+          <div class="logs-header">
+            <h3 class="logs-title">Access Logs</h3>
+            <div class="logs-actions">
+              <button class="action-button" onclick="copyMicrophoneLogs()">
+                <span>📋</span>
+                <span>Copy</span>
+              </button>
+            </div>
           </div>
-          <textarea id="microphoneLogs" class="log-area" readonly></textarea>
-          <div class="info-text">
-            Real-time detailed logs. Notifications will alert you when microphone access is detected.
+          <textarea class="log-area" id="microphoneLogs" readonly></textarea>
+          <div class="logs-info">
+            Logs are automatically saved to ./scuzero_logs/microphone_logs.txt
           </div>
-        </div>
+        </section>
       </div>
 
       <!-- GPS Tab -->
-      <div id="gps" class="tab-content">
-        <div class="section">
-          <h2>📍 GPS Access Monitor</h2>
-          <div class="controls">
-            <button onclick="startGpsMonitoring()">🚀 Start Monitoring</button>
-            <button onclick="stopGpsMonitoring()">🛑 Stop Monitoring</button>
-            <button onclick="clearGpsLogs()">🗑️ Clear Logs</button>
-            <button onclick="refreshGpsLogs()">🔄 Refresh Logs</button>
+      <div id="gps" class="tab-content" style="display: none;">
+        <!-- GPS Monitor -->
+        <section class="monitor-section">
+          <div class="monitor-header">
+            <h2 class="monitor-title">GPS Access Monitor</h2>
+            <p class="monitor-description">Monitor and detect when apps access your location</p>
           </div>
-          <span id="gpsMonitorStatus" class="status inactive">Not Monitoring</span>
-          <div class="info-text">
-            Monitors GPS access and shows real-time alerts. Requires Usage Access permission.
+          <div class="monitor-controls">
+            <button class="control-button primary" onclick="startGpsMonitoring()">
+              <span>▶️</span>
+              <span>Start</span>
+            </button>
+            <button class="control-button" onclick="stopGpsMonitoring()">
+              <span>⏹️</span>
+              <span>Stop</span>
+            </button>
+            <button class="control-button" onclick="refreshGpsLogs()">
+              <span>🔄</span>
+              <span>Refresh</span>
+            </button>
+            <button class="control-button" onclick="clearGpsLogs()">
+              <span>🗑️</span>
+              <span>Clear</span>
+            </button>
           </div>
-        </div>
+          <div class="monitor-status">
+            <div class="status-indicator" id="gpsStatusIndicator"></div>
+            <span class="status-text" id="gpsStatusText">Ready to monitor</span>
+          </div>
+        </section>
 
-        <div class="section">
-          <div class="log-header">
-            <h2>📋 GPS Access Logs</h2>
-            <button onclick="copyGpsLogs()">📋 Copy Logs</button>
+        <!-- GPS Logs -->
+        <section class="logs-section">
+          <div class="logs-header">
+            <h3 class="logs-title">Access Logs</h3>
+            <div class="logs-actions">
+              <button class="action-button" onclick="copyGpsLogs()">
+                <span>📋</span>
+                <span>Copy</span>
+              </button>
+            </div>
           </div>
-          <textarea id="gpsLogs" class="log-area" readonly></textarea>
-          <div class="info-text">
-            Real-time detailed logs. Notifications will alert you when GPS access is detected.
+          <textarea class="log-area" id="gpsLogs" readonly></textarea>
+          <div class="logs-info">
+            Logs are automatically saved to ./scuzero_logs/gps_logs.txt
           </div>
-        </div>
+        </section>
       </div>
 
       <!-- Internet Tab -->
-      <div id="internet" class="tab-content">
-        <div class="section">
-          <h2>🌐 Internet Access Monitor</h2>
-          <div class="controls">
-            <button onclick="startInternetMonitoring()">🚀 Start Monitoring</button>
-            <button onclick="stopInternetMonitoring()">🛑 Stop Monitoring</button>
-            <button onclick="clearInternetLogs()">🗑️ Clear Logs</button>
-            <button onclick="refreshInternetLogs()">🔄 Refresh Logs</button>
+      <div id="internet" class="tab-content" style="display: none;">
+        <!-- Internet Monitor -->
+        <section class="monitor-section">
+          <div class="monitor-header">
+            <h2 class="monitor-title">Internet Access Monitor</h2>
+            <p class="monitor-description">Monitor and detect when apps access the internet</p>
           </div>
-          <span id="internetMonitorStatus" class="status inactive">Not Monitoring</span>
-          <div class="info-text">
-            Monitors internet access and shows real-time alerts. Requires Usage Access permission.
+          <div class="monitor-controls">
+            <button class="control-button primary" onclick="startInternetMonitoring()">
+              <span>▶️</span>
+              <span>Start</span>
+            </button>
+            <button class="control-button" onclick="stopInternetMonitoring()">
+              <span>⏹️</span>
+              <span>Stop</span>
+            </button>
+            <button class="control-button" onclick="refreshInternetLogs()">
+              <span>🔄</span>
+              <span>Refresh</span>
+            </button>
+            <button class="control-button" onclick="clearInternetLogs()">
+              <span>🗑️</span>
+              <span>Clear</span>
+            </button>
           </div>
-        </div>
+          <div class="monitor-status">
+            <div class="status-indicator" id="internetStatusIndicator"></div>
+            <span class="status-text" id="internetStatusText">Ready to monitor</span>
+          </div>
+        </section>
 
-        <div class="section">
-          <div class="log-header">
-            <h2>📋 Internet Access Logs</h2>
-            <button onclick="copyInternetLogs()">📋 Copy Logs</button>
+        <!-- Internet Logs -->
+        <section class="logs-section">
+          <div class="logs-header">
+            <h3 class="logs-title">Access Logs</h3>
+            <div class="logs-actions">
+              <button class="action-button" onclick="copyInternetLogs()">
+                <span>📋</span>
+                <span>Copy</span>
+              </button>
+            </div>
           </div>
-          <textarea id="internetLogs" class="log-area" readonly></textarea>
-          <div class="info-text">
-            Real-time detailed logs. Notifications will alert you when internet access is detected.
+          <textarea class="log-area" id="internetLogs" readonly></textarea>
+          <div class="logs-info">
+            Logs are automatically saved to ./scuzero_logs/internet_logs.txt
           </div>
-        </div>
+        </section>
       </div>
-    </div>
 
-    <div class="section">
-      <h2>⚙️ Permissions & Settings</h2>
-      <button onclick="openUsageSettings()">📊 Grant Usage Access</button>
-      <button onclick="requestCameraPermission()">📷 Request Camera Permission</button>
-      <div class="info-text">
-        Required permissions for full monitoring functionality
-      </div>
-    </div>
+      <!-- Settings Section -->
+      <section class="settings-section">
+        <h3 class="settings-title">⚙️ Settings & Permissions</h3>
+        <div class="settings-grid">
+          <button class="control-button primary" onclick="openUsageSettings()">
+            <span>📊</span>
+            <span>Usage Access</span>
+          </button>
+          <button class="control-button" onclick="requestCameraPermission()">
+            <span>📷</span>
+            <span>Camera Perm</span>
+          </button>
+          <button class="control-button" onclick="checkPermissions()">
+            <span>🔍</span>
+            <span>Check Perms</span>
+          </button>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script src="scuzero-ui-logic.js"></script>

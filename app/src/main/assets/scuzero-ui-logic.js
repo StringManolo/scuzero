@@ -12,20 +12,95 @@ let monitoringStatus = {
   internet: false
 };
 
-// Tab management
+let lastLogContents = {
+  camera: '',
+  microphone: '',
+  gps: '',
+  internet: ''
+};
+
+// Theme Management
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('scuzero-theme');
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
+  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    enableDarkTheme();
+  } else {
+    enableLightTheme();
+  }
+}
+
+function enableDarkTheme() {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  document.getElementById('themeIcon').textContent = '☀️';
+  localStorage.setItem('scuzero-theme', 'dark');
+  
+  // Update permission warning for dark theme
+  const warning = document.getElementById('permissionWarning');
+  if (warning.style.display !== 'none') {
+    warning.classList.add('dark');
+  }
+}
+
+function enableLightTheme() {
+  document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').textContent = '🌙';
+  localStorage.setItem('scuzero-theme', 'light');
+  
+  // Update permission warning for light theme
+  const warning = document.getElementById('permissionWarning');
+  warning.classList.remove('dark');
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  if (currentTheme === 'dark') {
+    enableLightTheme();
+  } else {
+    enableDarkTheme();
+  }
+}
+
+// Tab Management
 function openTab(tabName) {
-  const tabContents = document.getElementsByClassName('tab-content');
-  for (let i = 0; i < tabContents.length; i++) {
-    tabContents[i].classList.remove('active');
-  }
+  // Hide all tab contents
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabContents.forEach(tab => {
+    tab.style.display = 'none';
+  });
 
-  const tabButtons = document.getElementsByClassName('tab-button');
-  for (let i = 0; i < tabButtons.length; i++) {
-    tabButtons[i].classList.remove('active');
-  }
+  // Remove active class from all tab buttons
+  const tabButtons = document.querySelectorAll('.tab-button');
+  tabButtons.forEach(button => {
+    button.classList.remove('active');
+  });
 
-  document.getElementById(tabName).classList.add('active');
+  // Show selected tab and activate button
+  document.getElementById(tabName).style.display = 'block';
   event.currentTarget.classList.add('active');
+}
+
+// Auto-scroll control
+function shouldAutoScroll(logArea) {
+  const threshold = 50; // pixels from bottom
+  return logArea.scrollHeight - logArea.scrollTop - logArea.clientHeight <= threshold;
+}
+
+// Status Management
+function updateMonitorStatus(monitorType, isActive) {
+  const indicator = document.getElementById(monitorType + 'StatusIndicator');
+  const statusText = document.getElementById(monitorType + 'StatusText');
+  
+  if (isActive) {
+    indicator.classList.add('active');
+    statusText.textContent = '🟢 Active - Real-time Monitoring';
+    monitoringStatus[monitorType] = true;
+  } else {
+    indicator.classList.remove('active');
+    statusText.textContent = '🔴 Inactive';
+    monitoringStatus[monitorType] = false;
+  }
 }
 
 // Common Functions
@@ -33,7 +108,8 @@ const showNativeToast = (msg) => {
   if (typeof scuzero !== 'undefined' && scuzero.showToast) {
     scuzero.showToast("🔒 " + msg);
   } else {
-    alert("System interface not available");
+    // Fallback notification
+    console.log("Toast: " + msg);
   }
 }
 
@@ -54,6 +130,11 @@ const checkPermissions = () => {
   if (missingPermissions.length > 0) {
     permissionText.textContent = `Missing: ${missingPermissions.join(", ")}. These are required for monitoring.`;
     permissionWarning.style.display = 'block';
+    
+    // Apply theme class to warning
+    if (document.documentElement.getAttribute('data-theme') === 'dark') {
+      permissionWarning.classList.add('dark');
+    }
   } else {
     permissionWarning.style.display = 'none';
     showNativeToast("All permissions granted ✓");
@@ -68,7 +149,85 @@ const fixPermissions = () => {
   }
 }
 
-// Camera Monitor Functions
+// Enhanced Log Refresh Functions
+const refreshCameraLogs = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.getCameraAccessLogs) {
+    const logs = scuzero.getCameraAccessLogs();
+    const logArea = document.getElementById('cameraLogs');
+    const currentScroll = shouldAutoScroll(logArea);
+    
+    if (logs !== lastLogContents.camera) {
+      logArea.value = logs || "No camera access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/camera_logs.txt";
+      lastLogContents.camera = logs;
+      
+      // Only auto-scroll if user was near bottom
+      if (currentScroll) {
+        setTimeout(() => {
+          logArea.scrollTop = logArea.scrollHeight;
+        }, 100);
+      }
+    }
+  }
+}
+
+const refreshMicrophoneLogs = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.getMicrophoneAccessLogs) {
+    const logs = scuzero.getMicrophoneAccessLogs();
+    const logArea = document.getElementById('microphoneLogs');
+    const currentScroll = shouldAutoScroll(logArea);
+    
+    if (logs !== lastLogContents.microphone) {
+      logArea.value = logs || "No microphone access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/microphone_logs.txt";
+      lastLogContents.microphone = logs;
+      
+      if (currentScroll) {
+        setTimeout(() => {
+          logArea.scrollTop = logArea.scrollHeight;
+        }, 100);
+      }
+    }
+  }
+}
+
+const refreshGpsLogs = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.getGpsAccessLogs) {
+    const logs = scuzero.getGpsAccessLogs();
+    const logArea = document.getElementById('gpsLogs');
+    const currentScroll = shouldAutoScroll(logArea);
+    
+    if (logs !== lastLogContents.gps) {
+      logArea.value = logs || "No GPS access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/gps_logs.txt";
+      lastLogContents.gps = logs;
+      
+      if (currentScroll) {
+        setTimeout(() => {
+          logArea.scrollTop = logArea.scrollHeight;
+        }, 100);
+      }
+    }
+  }
+}
+
+const refreshInternetLogs = () => {
+  if (typeof scuzero !== 'undefined' && scuzero.getInternetAccessLogs) {
+    const logs = scuzero.getInternetAccessLogs();
+    const logArea = document.getElementById('internetLogs');
+    const currentScroll = shouldAutoScroll(logArea);
+    
+    if (logs !== lastLogContents.internet) {
+      logArea.value = logs || "No internet access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/internet_logs.txt";
+      lastLogContents.internet = logs;
+      
+      if (currentScroll) {
+        setTimeout(() => {
+          logArea.scrollTop = logArea.scrollHeight;
+        }, 100);
+      }
+    }
+  }
+}
+
+// Monitor Control Functions (Camera)
 const startCameraMonitoring = () => {
   if (typeof scuzero === 'undefined') {
     showNativeToast("System interface not available");
@@ -108,18 +267,6 @@ const stopCameraMonitoring = () => {
     }
   } catch (error) {
     showNativeToast("Error stopping camera monitor: " + error);
-  }
-}
-
-const refreshCameraLogs = () => {
-  if (typeof scuzero !== 'undefined' && scuzero.getCameraAccessLogs) {
-    const logs = scuzero.getCameraAccessLogs();
-    const logArea = document.getElementById('cameraLogs');
-    logArea.value = logs || "No camera access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/camera_logs.txt";
-    
-    if (logs && logs.trim() !== "" && logs !== "No camera access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/camera_logs.txt") {
-      logArea.scrollTop = logArea.scrollHeight;
-    }
   }
 }
 
@@ -191,18 +338,6 @@ const stopMicrophoneMonitoring = () => {
   }
 }
 
-const refreshMicrophoneLogs = () => {
-  if (typeof scuzero !== 'undefined' && scuzero.getMicrophoneAccessLogs) {
-    const logs = scuzero.getMicrophoneAccessLogs();
-    const logArea = document.getElementById('microphoneLogs');
-    logArea.value = logs || "No microphone access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/microphone_logs.txt";
-    
-    if (logs && logs.trim() !== "" && logs !== "No microphone access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/microphone_logs.txt") {
-      logArea.scrollTop = logArea.scrollHeight;
-    }
-  }
-}
-
 const clearMicrophoneLogs = () => {
   if (typeof scuzero !== 'undefined' && scuzero.clearMicrophoneLogs) {
     const result = scuzero.clearMicrophoneLogs();
@@ -268,18 +403,6 @@ const stopGpsMonitoring = () => {
     }
   } catch (error) {
     showNativeToast("Error stopping GPS monitor: " + error);
-  }
-}
-
-const refreshGpsLogs = () => {
-  if (typeof scuzero !== 'undefined' && scuzero.getGpsAccessLogs) {
-    const logs = scuzero.getGpsAccessLogs();
-    const logArea = document.getElementById('gpsLogs');
-    logArea.value = logs || "No GPS access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/gps_logs.txt";
-    
-    if (logs && logs.trim() !== "" && logs !== "No GPS access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/gps_logs.txt") {
-      logArea.scrollTop = logArea.scrollHeight;
-    }
   }
 }
 
@@ -351,18 +474,6 @@ const stopInternetMonitoring = () => {
   }
 }
 
-const refreshInternetLogs = () => {
-  if (typeof scuzero !== 'undefined' && scuzero.getInternetAccessLogs) {
-    const logs = scuzero.getInternetAccessLogs();
-    const logArea = document.getElementById('internetLogs');
-    logArea.value = logs || "No internet access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/internet_logs.txt";
-    
-    if (logs && logs.trim() !== "" && logs !== "No internet access events detected yet...\n\nLogs are automatically saved to ./scuzero_logs/internet_logs.txt") {
-      logArea.scrollTop = logArea.scrollHeight;
-    }
-  }
-}
-
 const clearInternetLogs = () => {
   if (typeof scuzero !== 'undefined' && scuzero.clearInternetLogs) {
     const result = scuzero.clearInternetLogs();
@@ -388,20 +499,7 @@ const copyInternetLogs = () => {
   }
 }
 
-// Common Monitor Functions
-const updateMonitorStatus = (monitorType, isActive) => {
-  const statusElement = document.getElementById(monitorType + 'MonitorStatus');
-  if (isActive) {
-    statusElement.textContent = "🟢 Active - Real-time Monitoring";
-    statusElement.className = "status active";
-    monitoringStatus[monitorType] = true;
-  } else {
-    statusElement.textContent = "🔴 Inactive";
-    statusElement.className = "status inactive";
-    monitoringStatus[monitorType] = false;
-  }
-}
-
+// Common Functions
 const startLogRefresh = (monitorType) => {
   if (refreshIntervals[monitorType]) {
     clearInterval(refreshIntervals[monitorType]);
@@ -442,18 +540,31 @@ const requestCameraPermission = () => {
 
 // Initialize on load
 window.addEventListener('load', function() {
+  // Initialize theme
+  initializeTheme();
+  
+  // Add theme toggle listener
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  
+  // Initialize logs
   refreshCameraLogs();
   refreshMicrophoneLogs();
   refreshGpsLogs();
   refreshInternetLogs();
+  
+  // Check permissions
   checkPermissions();
   
-  setTimeout(() => {
-    if (typeof scuzero !== 'undefined' && scuzero.getDeviceInfo) {
-      const deviceInfo = scuzero.getDeviceInfo();
-      console.log("Device Info:", deviceInfo);
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('scuzero-theme')) {
+      if (e.matches) {
+        enableDarkTheme();
+      } else {
+        enableLightTheme();
+      }
     }
-  }, 1000);
+  });
 });
 
 window.addEventListener('beforeunload', function() {
