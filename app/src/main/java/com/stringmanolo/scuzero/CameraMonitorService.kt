@@ -36,9 +36,11 @@ class CameraMonitorService : Service() {
   private var isMonitoring = false
   private val checkInterval = 1000L
   private val ourPackageName = "com.stringmanolo.scuzero"
-  private val ourPackageName2 = "com.stringmanolo.scuzero.debug"
-  private var lastLogContent: String? = null
-  private var lastLogMinute: String? = null
+
+  // Improved duplicate detection
+  private data class LogKey(val appName: String, val packageName: String, val eventType: String, val minute: String)
+  private val recentLogs = LinkedHashMap<LogKey, Long>() // Track recent logs with timestamp
+  private val duplicateWindow = 60000L // 1 minute in milliseconds
 
   companion object {
     const val NOTIFICATION_ID = 12346
@@ -133,19 +135,22 @@ class CameraMonitorService : Service() {
         try {
           val currentTime = System.currentTimeMillis()
 
+          // Clean up old entries from recentLogs
+          cleanOldRecentLogs(currentTime)
+
           if (currentTime - lastCameraStateCheck > 500) {
-            checkCameraStateChanges()
+            checkCameraStateChanges(currentTime)
             lastCameraStateCheck = currentTime
           }
 
           val foregroundApp = getForegroundApp()
           if (foregroundApp != null && !previousForegroundApps.contains(foregroundApp)) {
-            if (foregroundApp != ourPackageName && foregroundApp != ourPackageName2 && isCameraRelatedApp(foregroundApp, knownCameraApps)) {
+            if (foregroundApp != ourPackageName && isCameraRelatedApp(foregroundApp, knownCameraApps)) {
               val appName = getAppName(foregroundApp)
               val detailedInfo = getAppDetailedInfo(foregroundApp)
               val logEntry = createDetailedLogEntry("FOREGROUND_APP", appName, foregroundApp, detailedInfo)
 
-              if (shouldAddLog(logEntry)) {
+              if (shouldAddLog("FOREGROUND_APP", appName, foregroundApp, currentTime)) {
                 addLogEntry(logEntry)
                 showCameraAlert(appName, foregroundApp)
               }
@@ -157,7 +162,7 @@ class CameraMonitorService : Service() {
             previousForegroundApps.add(foregroundApp)
           }
 
-          checkUsageEvents()
+          checkUsageEvents(currentTime)
 
           Thread.sleep(checkInterval)
         } catch (e: InterruptedException) {
@@ -169,7 +174,17 @@ class CameraMonitorService : Service() {
     }.start()
   }
 
-  private fun checkCameraStateChanges() {
+  private fun cleanOldRecentLogs(currentTime: Long) {
+    val iterator = recentLogs.iterator()
+    while (iterator.hasNext()) {
+      val (key, timestamp) = iterator.next()
+      if (currentTime - timestamp > duplicateWindow) {
+        iterator.remove()
+      }
+    }
+  }
+
+  private fun checkCameraStateChanges(currentTime: Long) {
     try {
       cameraManager.registerTorchCallback(object : CameraManager.TorchCallback() {
         override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
@@ -177,7 +192,7 @@ class CameraMonitorService : Service() {
 
           val logEntry = createDetailedLogEntry("TORCH_EVENT", "System", cameraId, "Torch ${if (enabled) "enabled" else "disabled"}")
 
-          if (shouldAddLog(logEntry)) {
+          if (shouldAddLog("TORCH_EVENT", "System", cameraId, currentTime)) {
             addLogEntry(logEntry)
             showCameraAlert("System", cameraId)
           }
@@ -188,7 +203,7 @@ class CameraMonitorService : Service() {
     }
   }
 
-  private fun checkUsageEvents() {
+  private fun checkUsageEvents(currentTime: Long) {
     try {
       val endTime = System.currentTimeMillis()
       val beginTime = endTime - checkInterval
@@ -208,7 +223,7 @@ class CameraMonitorService : Service() {
               val detailedInfo = getAppDetailedInfo(event.packageName)
               val logEntry = createDetailedLogEntry("ACTIVITY_RESUMED", appName, event.packageName, detailedInfo)
 
-              if (shouldAddLog(logEntry)) {
+              if (shouldAddLog("ACTIVITY_RESUMED", appName, event.packageName, currentTime)) {
                 addLogEntry(logEntry)
                 showCameraAlert(appName, event.packageName)
               }
@@ -219,7 +234,7 @@ class CameraMonitorService : Service() {
               val appName = getAppName(event.packageName)
               val logEntry = createDetailedLogEntry("ACTIVITY_PAUSED", appName, event.packageName, "App backgrounded")
 
-              if (shouldAddLog(logEntry)) {
+              if (shouldAddLog("ACTIVITY_PAUSED", appName, event.packageName, currentTime)) {
                 addLogEntry(logEntry)
               }
             }
@@ -228,6 +243,20 @@ class CameraMonitorService : Service() {
       }
     } catch (e: SecurityException) {
     } catch (e: Exception) {
+    }
+  }
+
+  private fun shouldAddLog(eventType: String, appName: String, packageName: String, currentTime: Long): Boolean {
+    val minute = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(currentTime))
+    val key = LogKey(appName, packageName, eventType, minute)
+
+    // Check if we've seen this exact same log in the current minute
+    val lastSeen = recentLogs[key]
+    return if (lastSeen != null && (currentTime - lastSeen) < duplicateWindow) {
+      false // Duplicate within the same minute
+    } else {
+      recentLogs[key] = currentTime
+      true
     }
   }
 
@@ -320,27 +349,14 @@ class CameraMonitorService : Service() {
     """.trimIndent()
   }
 
-  private fun shouldAddLog(newLog: String): Boolean {
-    val currentMinute = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
-    val logContent = newLog.replace(Regex("\\d{2}:\\d{2}:\\d{2}\\.\\d{3}"), "TIMESTAMP")
-
-    return if (logContent == lastLogContent && currentMinute == lastLogMinute) {
-      false
-    } else {
-      lastLogContent = logContent
-      lastLogMinute = currentMinute
-      true
-    }
-  }
-
   private fun addLogEntry(logEntry: String) {
     cameraAccessLogs.add(logEntry)
     latestLogs.add(logEntry)
 
-    if (cameraAccessLogs.size > 20) {
+    if (cameraAccessLogs.size > 50) {
       cameraAccessLogs.poll()
     }
-    if (latestLogs.size > 20) {
+    if (latestLogs.size > 50) {
       latestLogs.poll()
     }
 
@@ -394,6 +410,7 @@ class CameraMonitorService : Service() {
 
   override fun onDestroy() {
     isMonitoring = false
+    recentLogs.clear()
     super.onDestroy()
   }
 }
