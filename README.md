@@ -1,4 +1,4 @@
-# 🛡️ Scuzero - Privacy Hardening Android App
+# 🛡️ Scuzero - Privacy Hardening Android App &nbsp; &nbsp; &nbsp; &nbsp; [![Download Scuzero](https://img.shields.io/badge/Download-Scuzero-blue)](https://github.com/StringManolo/scuzero/releases/download/V0.0.1/app-release.apk)
 
 **Monitor and protect your privacy on Android** - Scuzero detects and logs when applications access your sensors and personal data without your knowledge.
 
