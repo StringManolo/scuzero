@@ -194,8 +194,12 @@ traces/
 # ==================================
 # Secrets
 # ==================================
-*/secrets/*
+/secrets/*
 KEYSTORE_BASE64
 KEYSTORE_PASSWORD
 KEY_ALIAS
 KEY_PASSWORD
+SIGNING_KEY_ALIAS
+SIGNING_KEY_PASSWORD
+SIGNING_KEY_STORE_BASE64
+SIGNING_STORE_PASSWORD
