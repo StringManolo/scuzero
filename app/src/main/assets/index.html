@@ -32,16 +32,58 @@
             border-radius: 5px;
             width: 200px;
         }
+        .camera-control {
+            margin: 15px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        .status {
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .status.enabled {
+            color: green;
+        }
+        .status.disabled {
+            color: red;
+        }
+        .status.admin-required {
+            color: orange;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Scuzero UI</h1>
-        
-        <button onclick="showNativeToast()">Toast Test</button>
+
+        <button onclick="showNativeToast('Hello from JS!')">Toast Test</button>
         <button onclick="getDeviceInfo()">Native info test</button>
-        
+
         <br><br>
+
+        <!-- Camera Control -->
+        <div class="camera-control">
+            <h2>Camera Control</h2>
+            <div class="checkbox-container">
+                <input type="checkbox" id="cameraToggle" onchange="toggleCamera()">
+                <label for="cameraToggle">Enable Camera</label>
+                <span id="cameraStatus" class="status">Loading...</span>
+            </div>
+            <button onclick="checkCameraStatus()">Check Status</button>
+            <button onclick="checkAdminStatus()">Check Admin Permissions</button>
+        </div>
     </div>
 
     <script src="scuzero-ui-logic.js"></script>
